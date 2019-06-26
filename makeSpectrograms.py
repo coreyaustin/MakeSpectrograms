@@ -8,9 +8,9 @@ Created on Wed May 29 21:04:21 2019
 
 #%%
 from gwpy.timeseries import TimeSeriesDict
-from matplotlib import pyplot as plt
 import numpy as np
 from scipy import interpolate
+from os import path
 
 #%%
 
@@ -23,7 +23,6 @@ from scipy import interpolate
 # both are cropped in frequency to speed things up
 def specgram(channel,fftl,ovlp):
     spec = channel.spectrogram2(fftlength=fftl,overlap=ovlp)**(1/2.)
-    spec = spec.crop_frequencies(low=20,high=120)
     norm = spec.ratio('median')
     return spec,norm
 
@@ -31,13 +30,16 @@ def specgram(channel,fftl,ovlp):
 #calculate spectrogram, normalized spectrogram, and spectra and save in a separate file
 #return both spectrograms
 def getData(channels,start,stop,filename,fftl=4,ovlp=2):
-    data = TimeSeriesDict.fetch(channels,start,stop)
+    if path.exists('{}'.format(filename)):
+        data = TimeSeriesDict.read('{}'.format(filename))
+    else:
+        data = TimeSeriesDict.fetch(channels,start,stop)
+        data.write('{}.hdf5'.format(filename),overwrite=True)
     spec = {}
     for i in channels:
         spec[i] = {}
         spec[i]['sp'],spec[i]['norm'] = specgram(data[i],fftl,ovlp)
         spec[i]['sp_asd'] = spec[i]['sp'].percentile(50)
-    data.write('{}.hdf5'.format(filename),overwrite=True)
     np.save(filename,spec)
     return spec 
 
@@ -46,7 +48,7 @@ def getData(channels,start,stop,filename,fftl=4,ovlp=2):
 def loadHDF5(filename,fftl=4,ovlp=2):
     data = TimeSeriesDict.read('{}.hdf5'.format(filename))
     spec = {}
-    for i in channels:
+    for i in data.keys():
         spec[i] = {}
         spec[i]['sp'],spec[i]['norm'] = specgram(data[i],fftl,ovlp)
         spec[i]['sp_asd'] = spec[i]['sp'].percentile(50)

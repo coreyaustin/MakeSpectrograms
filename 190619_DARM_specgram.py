@@ -7,7 +7,7 @@ Created on Wed Jun 19 14:00:09 2019
 """
 #%%
 
-from MakeSpectrograms.makeSpectrograms import *
+from makeSpectrograms import *
 
 # Update the matplotlib configuration parameters:
 plt.rcParams.update({'text.usetex': False})
