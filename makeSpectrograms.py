@@ -30,8 +30,8 @@ def specgram(channel,fftl,ovlp):
 #calculate spectrogram, normalized spectrogram, and spectra and save in a separate file
 #return both spectrograms
 def getData(channels,start,stop,filename,fftl=4,ovlp=2):
-    if path.exists('{}'.format(filename)):
-        data = TimeSeriesDict.read('{}'.format(filename))
+    if path.exists('{}.hdf5'.format(filename)):
+        data = TimeSeriesDict.read('{}.hdf5'.format(filename))
     else:
         data = TimeSeriesDict.fetch(channels,start,stop)
         data.write('{}.hdf5'.format(filename),overwrite=True)
