@@ -55,6 +55,11 @@ def loadHDF5(filename,fftl=4,ovlp=2):
     np.save(filename,spec)
     return spec
 
+def cropHDF5(readfile,writefile,starttime,stoptime):
+    data = TimeSeriesDict.read(readfile)
+    data = data.crop(start=starttime,end=stoptime)
+    data.write(writefile,overwrite=True)
+
 #return contents of a numpy file 
 def loadNPY(filename):
     return np.load(filename).item()
