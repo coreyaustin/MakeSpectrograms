@@ -26,6 +26,18 @@ def specgram(channel,fftl,ovlp):
     norm = spec.ratio('median')
     return spec,norm
 
+def calAccel(accel,cal=6.1e-6):
+    accel *= cal/((2*np.pi*accel.frequencies)**2)
+    return accel
+
+#return calibrated DARM in strain from a given DARM spectrum
+def calDARM(SensorSpec,calfile='./data/L1darmcal_Apr17.txt'):
+    caldarm = np.loadtxt(calfile)
+    darmcal = interpolate.interp1d(caldarm[:,0],caldarm[:,1],
+                fill_value='extrapolate')(SensorSpec.frequencies)
+    SensorSpec *= 10**(darmcal/20)/4000
+    return SensorSpec
+
 #fetch data for given channels at a given time and save the data, then 
 #calculate spectrogram, normalized spectrogram, and spectra and save in a separate file
 #return both spectrograms
@@ -40,6 +52,10 @@ def getData(channels,start,stop,filename,fftl=4,ovlp=2):
         spec[i] = {}
         spec[i]['sp'],spec[i]['norm'] = specgram(data[i],fftl,ovlp)
         spec[i]['sp_asd'] = spec[i]['sp'].percentile(50)
+        if channels.index(i)==0:
+            spec[i]['sp_asd'] = calDARM(spec[i]['sp_asd'][1:])
+        if i[10:13]=='ACC':
+            spec[i]['sp_asd'] = calAccel(spec[i]['sp_asd'][1:])
     np.save(filename,spec)
     return spec 
 
@@ -52,23 +68,20 @@ def loadHDF5(filename,fftl=4,ovlp=2):
         spec[i] = {}
         spec[i]['sp'],spec[i]['norm'] = specgram(data[i],fftl,ovlp)
         spec[i]['sp_asd'] = spec[i]['sp'].percentile(50)
+        if i[10:13]=='ACC':
+            spec[i]['sp_asd'] = calAccel(spec[i]['sp_asd'][1:])
     np.save(filename,spec)
     return spec
+
+def cropHDF5(readfile,writefile,starttime,stoptime):
+    data = TimeSeriesDict.read(readfile)
+    data = data.crop(start=starttime,end=stoptime)
+    data.write(writefile,overwrite=True)
 
 #return contents of a numpy file 
 def loadNPY(filename):
     return np.load(filename).item()
 
-#return calibrated DARM in strain from a given DARM spectrum
-def calDARM(SensorSpec,calfile='./data/L1darmcal_Apr17.txt'):
-    caldarm = np.loadtxt(calfile)
-    darmcal = interpolate.interp1d(caldarm[:,0],caldarm[:,1],
-                fill_value='extrapolate')(SensorSpec.frequencies)
-    SensorSpec *= 10**(darmcal/20)/4000
-    return SensorSpec
-
-def calAccel(SensorSpec,cal=6.1e-6):
-    SensorSpec *= cal/((2*np.pi*SensorSpec.frequencies)**2)
 
 ###############################################################################
 # Class for making calibrated DARM spectrum
